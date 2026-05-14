@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart OTel Configurator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 40px; background-color: #f0f2f5; }
+        .card { margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: #007bff; color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header d-flex justify-content-between align-items-center">
+            <h1>Smart OTel Configurator</h1>
+            <a href="https://opentelemetry.io/docs/collector/configuration/" target="_blank" class="btn btn-light btn-sm">Collector Docs</a>
+        </div>
+
+        <form action="/save" method="post">
+            <div class="card">
+                <div class="card-header"><strong>Receiver: OTLP Endpoint</strong></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <label class="form-label">IP Address</label>
+                            <input type="text" name="otlp_ip" class="form-control" value="{{ otlp_ip }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Port</label>
+                            <input type="number" name="otlp_port" class="form-control" value="{{ otlp_port }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><strong>Host Scrapers</strong></div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for s in available_scrapers %}
+                        <div class="col-md-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="scrapers" value="{{ s }}" id="sc_{{ s }}" {% if s in active_scrapers %}checked{% endif %}>
+                                <label class="form-check-label" for="sc_{{ s }}">{{ s }}</label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><strong>Pipeline Configuration</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Active Receivers</label>
+                        <select name="receivers" class="form-select" multiple size="3">
+                            {% for r in available_receivers %}
+                            <option value="{{ r }}" {% if r in active_receivers %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Active Processors</label>
+                        <select name="processors" class="form-select" multiple size="3">
+                            {% for p in available_processors %}
+                            <option value="{{ p }}" {% if p in active_processors %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Active Exporters</label>
+                        <select name="exporters" class="form-select" multiple size="3">
+                            {% for e in available_exporters %}
+                            <option value="{{ e }}" {% if e in active_exporters %}selected{% endif %}>{{ e }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><strong>Transform Processor Logic</strong></div>
+                <div class="card-body">
+                    <p class="text-muted">Multiply by -1 if value is greater than:</p>
+                    <div class="input-group">
+                        <span class="input-group-text">Threshold</span>
+                        <input type="number" name="transform_threshold" class="form-control" value="{{ simple_transforms[0].threshold if simple_transforms else '90' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success btn-lg">Save Configuration & Restart Collector</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

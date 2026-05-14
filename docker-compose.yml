@@ -45,7 +45,7 @@ services:
     build: ./otel-collector
     container_name: otel-collector
     volumes:
-      - ./otel-collector/config:/etc/otelcol-config:ro
+      - ./otel-collector/config:/etc/otelcol-config
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/hostfs:ro
@@ -61,6 +61,16 @@ services:
     container_name: config-ui
     ports:
       - "8000:8000"
+    volumes:
+      - ./otel-collector/config:/etc/otelcol-config
+    depends_on:
+      - otel-collector
+
+  config-ui-v2:
+    build: ./config-ui-v2
+    container_name: config-ui-v2
+    ports:
+      - "8001:8001"
     volumes:
       - ./otel-collector/config:/etc/otelcol-config
     depends_on:
