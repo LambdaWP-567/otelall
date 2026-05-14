@@ -15,6 +15,11 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mysecrettoken
     volumes:
       - influxdb_data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   grafana:
     build: ./grafana
@@ -23,10 +28,18 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SERVER_HTTP_ADDR=0.0.0.0
+      - GF_SERVER_HTTP_PORT=3000
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
     volumes:
       - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   otel-collector:
     build: ./otel-collector
@@ -40,7 +53,8 @@ services:
       - INFLUXDB_TOKEN=mysecrettoken
       - WATCH_INTERVAL=5s
     depends_on:
-      - influxdb
+      influxdb:
+        condition: service_healthy
 
   config-ui:
     build: ./config-ui
@@ -66,10 +80,12 @@ services:
       - INFLUXDB_TOKEN=mysecrettoken
       - INFLUXDB_ORG=myorg
       - INFLUXDB_BUCKET=metrics
+      - GRAFANA_URL=http://grafana:3000
     depends_on:
-      - influxdb
-      - otel-collector
-      - simulator
+      influxdb:
+        condition: service_healthy
+      grafana:
+        condition: service_healthy
 
 volumes:
   influxdb_data:

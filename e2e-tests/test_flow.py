@@ -27,13 +27,16 @@ def check_metric(measurement):
 
 def wait_for_service(name, url, expected_status=200):
     print(f"Waiting for {name} at {url}...")
-    for _ in range(30):
+    for _ in range(60): # Increased wait time
         try:
             response = requests.get(url, timeout=5)
             if response.status_code == expected_status:
-                print(f"{name} is up!")
+                print(f"{name} is up and responded with {expected_status}!")
                 return True
-        except:
+            else:
+                print(f"{name} responded with {response.status_code}")
+        except Exception as e:
+            # print(f"Error connecting to {name}: {e}")
             pass
         time.sleep(2)
     return False
@@ -52,17 +55,19 @@ def main():
     time.sleep(15)
 
     metrics_to_check = ["cpu_sim", "mem_sim", "disk_sim", "const_42", "inc_999"]
-
-    # Also check for some host metrics
     metrics_to_check.extend(["system.cpu.load_average.1m", "system.memory.usage"])
 
     all_passed = True
     for metric in metrics_to_check:
         print(f"Checking for metric: {metric}...", end=" ")
-        if check_metric(metric):
-            print("FOUND")
-        else:
-            print("NOT FOUND")
+        try:
+            if check_metric(metric):
+                print("FOUND")
+            else:
+                print("NOT FOUND")
+                all_passed = False
+        except Exception as e:
+            print(f"ERROR: {e}")
             all_passed = False
 
     if all_passed:
