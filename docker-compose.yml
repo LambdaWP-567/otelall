@@ -21,6 +21,20 @@ services:
       timeout: 5s
       retries: 5
 
+  influx-provisioning:
+    image: influxdb:2.7-alpine
+    container_name: influx-provisioning
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mysecrettoken
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+    volumes:
+      - ./influxdb/provision_dashboard.py:/usr/local/bin/provision_dashboard.py:ro
+    # Install requests and run script
+    entrypoint: ["/bin/sh", "-c", "apk add --no-cache python3 py3-requests && python3 /usr/local/bin/provision_dashboard.py"]
+
   grafana:
     build: ./grafana
     container_name: grafana

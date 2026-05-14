@@ -4,22 +4,39 @@ import requests
 import time
 
 def create_dashboard():
-    url = "http://localhost:8086/api/v2/dashboards"
+    # Use the service name from docker-compose
+    host = "http://influxdb:8086"
+    url = f"{host}/api/v2/dashboards"
     token = os.getenv("DOCKER_INFLUXDB_INIT_ADMIN_TOKEN")
-    org_id = "" # Need to get org ID first
+    org_name = os.getenv("DOCKER_INFLUXDB_INIT_ORG")
 
     headers = {
         "Authorization": f"Token {token}",
         "Content-Type": "application/json"
     }
 
+    print(f"Connecting to InfluxDB at {host}...")
+
+    # Wait for API to be ready
+    for _ in range(10):
+        try:
+            resp = requests.get(f"{host}/health", timeout=5)
+            if resp.status_code == 200:
+                break
+        except:
+            pass
+        time.sleep(2)
+
     # 1. Get Org ID
-    org_name = os.getenv("DOCKER_INFLUXDB_INIT_ORG")
-    orgs_resp = requests.get(f"http://localhost:8086/api/v2/orgs?org={org_name}", headers=headers)
+    orgs_resp = requests.get(f"{host}/api/v2/orgs?org={org_name}", headers=headers)
     if orgs_resp.status_code == 200:
-        org_id = orgs_resp.json()["orgs"][0]["id"]
+        orgs = orgs_resp.json().get("orgs", [])
+        if not orgs:
+            print(f"Org {org_name} not found")
+            return
+        org_id = orgs[0]["id"]
     else:
-        print("Failed to get org ID")
+        print(f"Failed to get org ID: {orgs_resp.text}")
         return
 
     dashboard = {
@@ -58,6 +75,4 @@ def create_dashboard():
         print(f"Failed to create InfluxDB dashboard: {resp.text}")
 
 if __name__ == "__main__":
-    # Wait for InfluxDB to be ready
-    time.sleep(10)
     create_dashboard()
