@@ -1,0 +1,56 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, otel-monitoring-stack ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run containers
+        run: |
+          docker compose up --build -d
+
+      - name: Wait for E2E tests
+        run: |
+          # The e2e-tests container runs once and exits
+          # We wait for it to finish and check its exit code
+          EXIT_CODE=$(docker wait e2e-tests)
+          docker compose logs e2e-tests
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "E2E tests failed with exit code $EXIT_CODE"
+            exit 1
+          fi
+          echo "E2E tests passed!"
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs-material
+
+      - name: Build and deploy documentation
+        run: |
+          cd docs
+          mkdocs gh-deploy --force
