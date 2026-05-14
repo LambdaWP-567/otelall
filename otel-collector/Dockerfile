@@ -23,6 +23,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.92.0
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.92.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.92.0
 EOF
 
 RUN builder --config builder-config.yaml

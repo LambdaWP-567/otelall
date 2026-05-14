@@ -18,6 +18,12 @@ receivers:
 
 processors:
   batch:
+  transform:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(value_double, value_double * -1) where value_double > 90
+          - set(value_int, value_int * -1) where value_int > 90
 
 exporters:
   influxdb:
@@ -30,5 +36,5 @@ service:
   pipelines:
     metrics:
       receivers: [otlp, hostmetrics]
-      processors: [batch]
+      processors: [transform, batch]
       exporters: [influxdb]

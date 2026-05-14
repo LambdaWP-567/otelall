@@ -4,10 +4,22 @@ Der Collector wurde speziell für dieses Projekt mit dem `ocb` (OpenTelemetry Co
 
 ## Besonderheiten
 
-*   **Minimalistisches Design:** Enthält nur die notwendigen Komponenten (`otlp`, `hostmetrics`, `influxdb`).
-*   **Watcher-Dienst:** Ein in Go geschriebener Wrapper (`watcher`) überwacht die `config.yaml`. Bei Änderungen wird der Collector-Prozess automatisch neu gestartet, ohne dass der Container beendet werden muss.
-*   **Host-Monitoring:** Durch Mounten von `/proc`, `/sys` und dem Root-Dateisystem kann der Collector Metriken des zugrunde liegenden Host-Systems erfassen.
+*   **Minimalistisches Design:** Enthält nur die notwendigen Komponenten (`otlp`, `hostmetrics`, `influxdb`, `transform`).
+*   **Watcher-Dienst:** Ein in Go geschriebener Wrapper (`watcher`) überwacht die `config.yaml`. Bei Änderungen wird der Collector-Prozess automatisch neu gestartet.
+*   **Host-Monitoring:** Erfasst Metriken des zugrunde liegenden Host-Systems.
 
-## Konfiguration
+## Datenverarbeitung (Transform Processor)
 
-Die Konfiguration befindet sich unter `otel-collector/config/config.yaml` und wird über ein Shared Volume auch der Config UI zugänglich gemacht.
+Der Collector enthält ein Beispiel für die Datenverarbeitung zur Laufzeit. In der `config.yaml` ist folgende Regel konfiguriert:
+
+```yaml
+processors:
+  transform:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(value_double, value_double * -1) where value_double > 90
+          - set(value_int, value_int * -1) where value_int > 90
+```
+
+Diese Regel stellt sicher, dass alle Messwerte über 90 (z.B. hohe CPU-Spitzen in der Simulation) als negative Werte gespeichert werden, um sie in Grafana hervorzuheben.
