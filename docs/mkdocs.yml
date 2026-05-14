@@ -1,0 +1,15 @@
+site_name: OTel All-in-One Documentation
+theme:
+  name: material
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Components:
+    - InfluxDB: components/influxdb.md
+    - Grafana: components/grafana.md
+    - OTel Collector: components/collector.md
+    - Config UI: components/config-ui.md
+    - Simulator: components/simulator.md
+  - Tests: tests.md
+  - Extension: extension.md
