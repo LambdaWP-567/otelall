@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  influxdb:
+    build: ./influxdb
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password123
+      - DOCKER_INFLUXDB_INIT_ORG=myorg
+      - DOCKER_INFLUXDB_INIT_BUCKET=metrics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=mysecrettoken
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+
+  grafana:
+    build: ./grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  otel-collector:
+    build: ./otel-collector
+    container_name: otel-collector
+    volumes:
+      - ./otel-collector/config:/etc/otelcol-config:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/hostfs:ro
+    environment:
+      - INFLUXDB_TOKEN=mysecrettoken
+      - WATCH_INTERVAL=5s
+    depends_on:
+      - influxdb
+
+  config-ui:
+    build: ./config-ui
+    container_name: config-ui
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./otel-collector/config:/etc/otelcol-config
+    depends_on:
+      - otel-collector
+
+  simulator:
+    build: ./simulator
+    container_name: simulator
+    depends_on:
+      - otel-collector
+
+  e2e-tests:
+    build: ./e2e-tests
+    container_name: e2e-tests
+    environment:
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=mysecrettoken
+      - INFLUXDB_ORG=myorg
+      - INFLUXDB_BUCKET=metrics
+    depends_on:
+      - influxdb
+      - otel-collector
+      - simulator
+
+volumes:
+  influxdb_data:
+  grafana_data:
