@@ -27,7 +27,7 @@ def check_metric(measurement):
 
 def wait_for_service(name, url, expected_status=200):
     print(f"Waiting for {name} at {url}...")
-    for _ in range(60): # Increased wait time
+    for _ in range(60):
         try:
             response = requests.get(url, timeout=5)
             if response.status_code == expected_status:
@@ -36,30 +36,41 @@ def wait_for_service(name, url, expected_status=200):
             else:
                 print(f"{name} responded with {response.status_code}")
         except Exception as e:
-            # print(f"Error connecting to {name}: {e}")
             pass
         time.sleep(2)
     return False
 
 def main():
-    if not wait_for_service("InfluxDB", f"{INFLUXDB_URL}/health"):
-        print("InfluxDB did not become healthy in time.")
+    print("--- Starting E2E Tests ---")
+
+    # Test Case 1: InfluxDB Health
+    print("Test Case 1: Checking InfluxDB Health...", end=" ")
+    if wait_for_service("InfluxDB", f"{INFLUXDB_URL}/health"):
+        print("PASSED")
+    else:
+        print("FAILED")
         sys.exit(1)
 
-    if not wait_for_service("Grafana", f"{GRAFANA_URL}/api/health"):
-        print("Grafana did not become healthy in time.")
+    # Test Case 2: Grafana Health
+    print("Test Case 2: Checking Grafana Health...", end=" ")
+    if wait_for_service("Grafana", f"{GRAFANA_URL}/api/health"):
+        print("PASSED")
+    else:
+        print("FAILED")
         sys.exit(1)
 
     # Give some time for metrics to flow
     print("Waiting 15 seconds for metrics to flow...")
     time.sleep(15)
 
+    # Test Case 3: Metric Flow
+    print("Test Case 3: Verifying Metric Flow...")
     metrics_to_check = ["cpu_sim", "mem_sim", "disk_sim", "const_42", "inc_999"]
     metrics_to_check.extend(["system.cpu.load_average.1m", "system.memory.usage"])
 
     all_passed = True
     for metric in metrics_to_check:
-        print(f"Checking for metric: {metric}...", end=" ")
+        print(f"  - Verifying {metric}...", end=" ")
         try:
             if check_metric(metric):
                 print("FOUND")
